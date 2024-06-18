@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>911 PLANE</title>
+    <style>
+        body {
+
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #70c5ce;
+            font-family: Arial, sans-serif;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .game-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: #70c5ce;
+        }
+
+        .plane {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: url('plane.png') no-repeat center center; /* Replace with actual URL */
+            background-size: cover;
+            top: 50%;
+            left: 50px;
+            transition: transform 0.2s ease-in-out; /* For blast effect */
+        }
+
+        .building {
+            position: absolute;
+            width: 60px;
+            background: url('building.png') no-repeat center center; /* Replace with actual URL */
+            background-size: cover;
+        }
+
+        .score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 24px;
+
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-area">
+            <div class="plane" id="plane"></div>
+        </div>
+        <div class="score" id="score">Score: 0</div>
+    </div>
+    <audio id="explosionSound">
+        <source src="sound.mp3" type="audio/mpeg">
+    </audio>
+    <script>
+        const plane = document.getElementById('plane');
+        const gameArea = document.querySelector('.game-area');
+        const scoreDisplay = document.getElementById('score');
+        const explosionSound = document.getElementById('explosionSound');
+
+        let planeTop = gameArea.clientHeight / 2;
+        let score = 0;
+        let gameInterval;
+        let buildingInterval;
+        let gravityInterval;
+        let gameRunning = false;
+
+        // Function to start the game
+        function startGame() {
+            gameRunning = true;
+            gameInterval = setInterval(gameLoop, 20);
+            buildingInterval = setInterval(generateBuilding, 2000);
+            gravityInterval = setInterval(applyGravity, 20);
+        }
+
+        // Function to handle game over
+        function gameOver() {
+            clearInterval(gameInterval);
+            clearInterval(buildingInterval);
+            clearInterval(gravityInterval);
+            explosionSound.play(); // Play explosion sound
+            plane.classList.add('explode'); // Add explosion effect
+            setTimeout(() => {
+                alert(`Game Over! Your score: ${score}`);
+                location.reload();
+            }, 1000); // Wait 1 second before showing alert
+        }
+
+        // Function to apply gravity to the plane
+        function applyGravity() {
+            planeTop += 2;
+            plane.style.top = planeTop + 'px';
+            if (planeTop >= gameArea.clientHeight - plane.clientHeight) {
+                gameOver();
+            }
+        }
+
+        // Function to make the plane jump
+        function jump() {
+            if (!gameRunning) {
+                startGame();
+            }
+            planeTop -= 50;
+            plane.style.top = planeTop + 'px';
+        }
+
+        // Function to generate buildings
+        function generateBuilding() {
+            const buildingHeight = Math.random() * (gameArea.clientHeight - 200) + 100;
+            const building = document.createElement('div');
+            building.classList.add('building');
+            building.style.height = buildingHeight + 'px';
+            building.style.left = gameArea.clientWidth + 'px';
+            gameArea.appendChild(building);
+
+            // Move the building to the left
+            const moveBuilding = setInterval(() => {
+                const currentLeft = parseInt(window.getComputedStyle(building).getPropertyValue('left'));
+                building.style.left = (currentLeft - 5) + 'px';
+
+                // Check for collision
+                const planeRect = plane.getBoundingClientRect();
+                const buildingRect = building.getBoundingClientRect();
+                if (planeRect.left < buildingRect.right &&
+                    planeRect.right > buildingRect.left &&
+                    planeRect.top < buildingRect.bottom &&
+                    planeRect.bottom > buildingRect.top) {
+                    clearInterval(moveBuilding);
+                    gameOver();
+                }
+
+                // Remove building if it goes off screen
+                if (currentLeft <= -building.clientWidth) {
+                    clearInterval(moveBuilding);
+                    gameArea.removeChild(building);
+                    score++;
+                    scoreDisplay.innerText = `Score: ${score}`;
+                }
+            }, 20);
+        }
+
+        // Function to handle game loop
+        function gameLoop() {
+            plane.style.top = planeTop + 'px';
+        }
+
+        // Event listener for plane jump
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                jump();
+            }
+        });
+    </script>
+</body>
+</html>
